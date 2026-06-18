@@ -1,0 +1,40 @@
+[build-system]
+requires = ["setuptools>=61", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "sprinkler-hd-gan"
+version = "0.1.0"
+description = "Fire sprinkler layout via pix2pixHD-style GAN with dedicated hazard channel (Zeng et al. 2025++)."
+readme = "README.md"
+requires-python = ">=3.9"
+dependencies = [
+  "numpy>=1.24",
+  "opencv-python-headless>=4.8",
+  "pillow>=10.0",
+  "pyyaml>=6.0",
+  "tqdm>=4.66",
+  "torch>=2.0",
+  "torchvision>=0.15",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=7.4", "ruff>=0.1"]
+ifc = ["ifcopenshell>=0.7", "shapely>=2.0"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+
+[project.scripts]
+sprinkler-hd-train = "sprinkler_hd_gan.cli.train:main"
+sprinkler-hd-infer = "sprinkler_hd_gan.cli.infer:main"
+sprinkler-hd-synth = "sprinkler_hd_gan.cli.synth_dataset:main"
+sprinkler-hd-ifc-export = "sprinkler_hd_gan.cli.ifc_export:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py39"

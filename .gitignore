@@ -1,0 +1,39 @@
+# Local environments
+.venv/
+.venv*/
+
+# Editor and OS metadata
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+
+# Python caches/build output
+__pycache__/
+*.py[cod]
+*.pyo
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Node dependencies/build output
+node_modules/
+web/node_modules/
+web/dist/
+
+# Generated sprinkler/model artifacts
+input/
+outputs/
+projects/
+output/
+output_*/
+sprinkler2/output/
+sprinkler2/output_*/
+sprinkler_hd_gan/out/
+sprinkler_hd_gan/runs/
+sprinkler_hd_gan/data/
+sprinkler_hd_gan/pred.png
+
+# Local third-party/model checkouts
+segment-anything-2/

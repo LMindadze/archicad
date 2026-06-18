@@ -1,0 +1,42 @@
+# Paper-aligned defaults (Zeng et al., 2025) + improved hazard encoding.
+canvas:
+  width: 640
+  height: 512
+  mm_per_pixel: 100.0
+
+hazard_encoding:
+  # "scalar": one extra channel with 0 / 0.5 / 1.0 for low/med/high (normalized).
+  # "onehot": three extra channels (clearer signal than background tint in paper).
+  mode: onehot
+  # Keep paper-compatible RGB legend for semantic map (room colors arbitrary beyond these).
+  paper_background_tint_for_film: false
+
+augmentation:
+  hflip: true
+  vflip: true
+  rot180: true
+
+training:
+  batch_size: 2
+  num_workers: 0
+  lr_g: 0.0002
+  lr_d: 0.0002
+  beta1: 0.5
+  beta2: 0.999
+  num_epochs: 200
+  lambda_gan: 1.0
+  lambda_feat: 10.0
+  lambda_l1: 10.0
+  ngf: 64
+  ndf: 64
+  n_downsample_global: 4
+  n_blocks_global: 9
+  num_d_scales: 3
+
+standards:
+  # Equivalent protection radius (m) for quick coverage check — illustrative GB50084-style spacing.
+  # Override per project / jurisdiction.
+  hazard_radius_m:
+    low: 2.5
+    medium: 2.1
+    high: 2.1
