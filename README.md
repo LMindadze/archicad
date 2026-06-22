@@ -21,6 +21,8 @@ python run_sprinkler_app.py
 
 The runner starts the backend and frontend, then prints the local URLs.
 
+For setup, app usage, CLI workflows, Revit export, output handling, and troubleshooting, see [docs/FULL_GUIDE.md](docs/FULL_GUIDE.md).
+
 ## Output Policy
 
 Generated data should go under `outputs/`. The app stores project runs under `outputs/projects/`, and CLI defaults now write to `outputs/output*` paths instead of top-level `output*` folders.
