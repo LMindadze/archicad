@@ -170,6 +170,43 @@ The app workflow follows these stages:
 6. Review
 7. Export
 
+### Approved V1 Sample Layout Seed
+
+For the sample garage, the app can preserve a previously approved baseline sprinkler layout before it runs main trunk post-processing. This is how two machines stay visually consistent for the same IFC and default settings.
+
+The preferred local seed path is:
+
+```text
+input/approved_v1_layout_result.json
+```
+
+This file is intentionally local-only because `input/` is ignored by git. To make a second PC match the original approved sample layout, copy the approved final layout JSON from the original PC to that path.
+
+The approved sample seed is the final post-trunk layout from the main PC: 176 sprinkler heads, 189 branch lines, no secondary branches, and 6 `trunk_segments`.
+
+Use the helper script to copy and validate the seed:
+
+```powershell
+python scripts\import_approved_v1_seed.py "D:\path\from\main-pc\layout_result.json"
+```
+
+On the original/main PC, this helper can search for the approved sample seed and install the best 176-head candidate:
+
+```powershell
+python scripts\find_approved_v1_seed.py F:\unified\archicad --heads 176 --branches 189 --install
+```
+
+Then copy `input\approved_v1_layout_result.json` from the main PC into the same path on the second PC.
+
+You can also point to a seed explicitly for one session:
+
+```powershell
+$env:SPRINKLER_APPROVED_V1_LAYOUT = "C:\path\to\layout_result.json"
+python run_sprinkler_app.py
+```
+
+When the seed is used, the run log contains `Using approved v1 final layout seed`. If the seed is missing, has the wrong counts/topology, or does not match the detected sample bounds, the app falls back to CP-SAT generation.
+
 ### 1. Input
 
 Use one of these options:

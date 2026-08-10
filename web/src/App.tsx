@@ -83,23 +83,23 @@ const emptySettings: Settings = {
   hazard_preset: "ordinary_group_1",
   head_type: "dry_horizontal_sidewall",
   head_spacing: 3.2,
-  branch_spacing: 4.0,
-  main_diameter: "DN80",
-  branch_diameter: "DN32",
-  column_clearance: 0.75,
-  stair_clearance: 0.6,
-  wall_clearance: 0.25,
-  min_obstacle_clearance: 0.4,
+  branch_spacing: 3.8,
+  main_diameter: "DN100",
+  branch_diameter: "DN65",
+  column_clearance: 0.55,
+  stair_clearance: 0.8,
+  wall_clearance: 0.3,
+  min_obstacle_clearance: 0.2,
   routing_model: "direct",
-  layout_model: "grid",
-  allow_secondary_branches: true,
-  cpsat_time_limit: 20,
-  cpsat_max_demand: 12,
-  cpsat_min_head_spacing: 2.0,
-  demand_step: 0.25,
-  target_coverage: 0.92,
+  layout_model: "cpsat",
+  allow_secondary_branches: false,
+  cpsat_time_limit: 60,
+  cpsat_max_demand: 4000,
+  cpsat_min_head_spacing: 1.8288,
+  demand_step: 1.0,
+  target_coverage: 0.96,
   revit_year: "2027",
-  revit_template: ""
+  revit_template: "C:\\ProgramData\\Autodesk\\RVT 2027\\Templates\\Default_M_ENU.rte"
 };
 
 function fmtNumber(value: number | undefined, digits = 2) {
@@ -967,6 +967,10 @@ export function App() {
   const settings = useMemo(() => ({ ...emptySettings, ...(project?.settings || {}), ...settingsDraft }) as Settings, [project?.settings, settingsDraft]);
   const activeFloor = project?.storeys?.find((floor) => floor.id === activeFloorId) || project?.storeys?.[0] || null;
 
+  useEffect(() => {
+    setSettingsDraft({});
+  }, [project?.id]);
+
   const refreshProject = useCallback(
     async (projectId: string) => {
       const next = await getProject(projectId);
@@ -1073,16 +1077,16 @@ export function App() {
           onTrunk={() =>
             project &&
             activeFloor &&
-            startStage("Trunk", async () => startGenerateTrunk(project.id, activeFloor.id, settingsDraft))
+            startStage("Trunk", async () => startGenerateTrunk(project.id, activeFloor.id, settings))
           }
           onSprinklers={() =>
             project &&
             activeFloor &&
-            startStage("Sprinklers", async () => startGenerateSprinklers(project.id, activeFloor.id, settingsDraft))
+            startStage("Sprinklers", async () => startGenerateSprinklers(project.id, activeFloor.id, settings))
           }
           onExport={() =>
             project &&
-            startStage("Export", async () => startExportRevit(project.id, selectedFloorArray, settingsDraft))
+            startStage("Export", async () => startExportRevit(project.id, selectedFloorArray, settings))
           }
           onCancel={() => run && cancelRun(run.id).then(setRun).catch((err) => setError(err.message))}
         />
@@ -1151,7 +1155,7 @@ export function App() {
             onChange={(patch) => {
               setSettingsDraft((prev) => ({ ...prev, ...patch }));
               if (project) {
-                patchSettings(project.id, { ...settingsDraft, ...patch }).then(setProject).catch((err) => setError(err.message));
+                patchSettings(project.id, { ...settings, ...patch }).then(setProject).catch((err) => setError(err.message));
               }
             }}
           />

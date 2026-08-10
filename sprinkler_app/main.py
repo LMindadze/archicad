@@ -12,6 +12,8 @@ from fastapi.staticfiles import StaticFiles
 from sprinkler_app.pipeline import (
     PipelineCancelled,
     analyze_ifc,
+    approved_v1_seed_candidates,
+    approved_v1_seed_quality,
     detect_floor,
     export_revit_from_project,
     generate_floor_sprinklers,
@@ -168,10 +170,15 @@ def start_stage_run(
 
 @app.get("/api/health")
 def health() -> dict[str, Any]:
+    approved_v1_seeds = [
+        approved_v1_seed_quality(path)
+        for path in approved_v1_seed_candidates()
+    ]
     return {
         "ok": True,
         "projects_root": str(PROJECTS_ROOT),
         "revit_runner": str(REPO_ROOT / "sprinkler2" / "make_rvt_pyrevit.py"),
+        "approved_v1_seeds": approved_v1_seeds,
     }
 
 

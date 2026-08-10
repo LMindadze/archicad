@@ -10,6 +10,9 @@ from typing import Any, Iterable
 
 import ifcopenshell
 import ifcopenshell.geom
+import matplotlib
+
+matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.patches import Polygon as MplPolygon

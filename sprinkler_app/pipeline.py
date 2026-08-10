@@ -42,7 +42,12 @@ from sprinkler_app.storage import (
 
 PYREVIT_EXE = Path(os.environ.get("APPDATA", "")) / "pyRevit-Master" / "bin" / "pyrevit.exe"
 TRACKED_TYPES = ("IfcSlab", "IfcColumn", "IfcStair", "IfcWallStandardCase", "IfcWall", "IfcSpace")
+APPROVED_V1_SEED_ENV = "SPRINKLER_APPROVED_V1_LAYOUT"
 APPROVED_V1_BASE_LAYOUT = OUTPUTS_ROOT / "output" / "layout_result.json"
+APPROVED_V1_LOCAL_SEED = REPO_ROOT / "input" / "approved_v1_layout_result.json"
+APPROVED_V1_EXPECTED_HEADS = 176
+APPROVED_V1_EXPECTED_BRANCHES = 189
+APPROVED_V1_EXPECTED_TRUNK_SEGMENTS = 6
 
 
 class PipelineCancelled(Exception):
@@ -223,19 +228,92 @@ def settings_match_approved_v1(settings: dict[str, Any]) -> bool:
     )
 
 
+def approved_v1_seed_candidates() -> list[Path]:
+    candidates: list[Path] = []
+    env_path = os.environ.get(APPROVED_V1_SEED_ENV)
+    if env_path:
+        candidates.append(Path(env_path).expanduser())
+    candidates.extend([APPROVED_V1_LOCAL_SEED, APPROVED_V1_BASE_LAYOUT])
+    unique: list[Path] = []
+    seen: set[str] = set()
+    for path in candidates:
+        key = str(path.resolve() if path.is_absolute() else (REPO_ROOT / path).resolve())
+        if key not in seen:
+            seen.add(key)
+            unique.append(Path(key))
+    return unique
+
+
+def approved_v1_seed_quality(path: Path) -> dict[str, Any]:
+    report: dict[str, Any] = {
+        "path": str(path),
+        "exists": path.exists(),
+        "valid": False,
+        "reason": "missing",
+    }
+    if not path.exists():
+        return report
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        report["reason"] = f"unreadable: {exc}"
+        return report
+    geoms = data.get("geometries") or {}
+    heads = len(geoms.get("sprinkler_heads") or [])
+    branches = len(geoms.get("branch_lines") or [])
+    secondary = len(geoms.get("secondary_branch_lines") or [])
+    trunks = len(geoms.get("trunk_segments") or [])
+    bounds = geometry_bounds(geoms.get("protected_floor_area"))
+    report.update(
+        {
+            "heads": heads,
+            "branch_lines": branches,
+            "secondary_branch_lines": secondary,
+            "trunk_segments": trunks,
+            "bounds": bounds,
+        }
+    )
+    problems = []
+    if heads != APPROVED_V1_EXPECTED_HEADS:
+        problems.append(f"expected {APPROVED_V1_EXPECTED_HEADS} heads, found {heads}")
+    if branches != APPROVED_V1_EXPECTED_BRANCHES:
+        problems.append(f"expected {APPROVED_V1_EXPECTED_BRANCHES} branches, found {branches}")
+    if secondary:
+        problems.append(f"expected no secondary branches, found {secondary}")
+    if trunks != APPROVED_V1_EXPECTED_TRUNK_SEGMENTS:
+        problems.append(f"expected {APPROVED_V1_EXPECTED_TRUNK_SEGMENTS} trunk segments, found {trunks}")
+    if not bounds:
+        problems.append("missing protected floor bounds")
+    if problems:
+        report["reason"] = "; ".join(problems)
+        return report
+    report["valid"] = True
+    report["reason"] = "ok"
+    return report
+
+
 def approved_v1_seed_layout(detected_path: Path, settings: dict[str, Any]) -> Path | None:
-    if not APPROVED_V1_BASE_LAYOUT.exists() or not settings_match_approved_v1(settings):
+    if not settings_match_approved_v1(settings):
         return None
     try:
         detected = json.loads(detected_path.read_text(encoding="utf-8"))
-        seed = json.loads(APPROVED_V1_BASE_LAYOUT.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError):
         return None
     detected_bounds = geometry_bounds(detected.get("unified_protected_floor_area"))
-    seed_bounds = geometry_bounds((seed.get("geometries") or {}).get("protected_floor_area"))
-    if not bounds_match(detected_bounds, seed_bounds):
-        return None
-    return APPROVED_V1_BASE_LAYOUT
+    for candidate in approved_v1_seed_candidates():
+        if not candidate.exists():
+            continue
+        try:
+            seed = json.loads(candidate.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            continue
+        quality = approved_v1_seed_quality(candidate)
+        if not quality.get("valid"):
+            continue
+        seed_bounds = geometry_bounds((seed.get("geometries") or {}).get("protected_floor_area"))
+        if bounds_match(detected_bounds, seed_bounds):
+            return candidate
+    return None
 
 
 def build_base_layout(
@@ -255,8 +333,17 @@ def build_base_layout(
         meta["input_detected_json"] = str(working_detected)
         meta["approved_v1_seed_layout"] = str(seed)
         (base_dir / "layout_result.json").write_text(json.dumps(seeded_layout, indent=2, ensure_ascii=False), encoding="utf-8")
-        runner.log(f"Using approved v1 base layout seed: {seed}")
+        runner.log(f"Using approved v1 final layout seed: {seed}")
         return base_dir / "layout_result.json"
+    if allow_approved_seed and settings_match_approved_v1(settings):
+        checked = "; ".join(
+            f"{path} ({approved_v1_seed_quality(path).get('reason', 'unknown')})"
+            for path in approved_v1_seed_candidates()
+        )
+        runner.log(
+            "Approved v1 final layout seed not found or did not match detected bounds; "
+            f"falling back to generated CP-SAT layout. Checked: {checked}"
+        )
     runner.run(
         [
             sys.executable,

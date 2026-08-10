@@ -33,7 +33,7 @@ DEFAULT_SETTINGS: dict[str, Any] = {
     "demand_step": 1.0,
     "target_coverage": 0.96,
     "revit_year": "2027",
-    "revit_template": r"F:\autodesk\RVT 2027\Templates\English\Systems-Default_Metric.rte",
+    "revit_template": r"C:\ProgramData\Autodesk\RVT 2027\Templates\Default_M_ENU.rte",
 }
 
 
